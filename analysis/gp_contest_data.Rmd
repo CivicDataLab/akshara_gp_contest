@@ -1,0 +1,15 @@
+---
+title: "gp contest data analysis"
+author: "CDL"
+date: "10/3/2018"
+output: html_document
+---
+
+```{r Reading datasets}
+class_4_16 <- read.csv("../data/gp_contest_csv_files_2016-17/gp_contest_class_4_2016-17.csv", stringsAsFactors = F, colClasses = "character", check.names = FALSE)
+class_4_17 <- read.csv("../data/gp_contest_csv_files_2017-18/gp_contest_class_4_2017-18.csv", stringsAsFactors = F, colClasses = "character", check.names = FALSE)
+
+common_story_ids <- dplyr::intersect(class_4_16$STORY_ID, class_4_17$STORY_ID)
+common_state_codes <- dplyr::intersect(class_4_16$SCODE, class_4_17$SNAME)
+```
+

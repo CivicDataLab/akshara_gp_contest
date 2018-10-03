@@ -8,9 +8,15 @@ __Datasets__:
 
 __Analysis__:
 
-- 
+- [] School performance for a given year
+- [] Class wise performance for a school
+- [] Inter school performance - across geographies
+- [] Performance comparison across years - For schools present in both years
+- [] Subject performance chart for a school
 
 
 
+__Anomalies__:
 
+- SCODE and SNAME fields are not in sync across years for Class 4 datasets. 
 
