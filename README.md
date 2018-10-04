@@ -12,7 +12,7 @@ __Analysis__:
   - Gender wise performance
   - Subject wise performance
 - [] Inter school performance - across geographies
-- [] Performance comparison across years - For schools present in both years
+- [x] Performance comparison across years - For schools present in both years
 - [] Subject performance chart for a school
 
 __Assumptions__:

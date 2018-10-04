@@ -16,6 +16,28 @@ Method:
 - Divide the combined score by the number of students to get mean score per student
 - Ranking schools at overall/district/block/cluster/gp levels using the variable `mean score per student`
 
+```{r Datasets to read}
+datasets_to_read <- Sys.glob("../data/*/*.csv")
+datasets_to_read <- datasets_to_read[!datasets_to_read %in% "../data/gp_contest_csv_files_2017-18/gp_contest_class_6_2017-18.csv"]
+
+```
+
+
+
+```{r Reading datasets}
+read_dataset <- function(class_data_to_read){
+class_dataset <- read.csv(class_data_to_read, stringsAsFactors = FALSE, check.names = FALSE)
+
+if(grepl(class_data_to_read,pattern = "gp_contest_class_4_2017")){
+ index_to_rename <- which(names(class_dataset) == 'SNAME')
+ names(class_dataset)[index_to_rename] <- 'SCODE'
+ names(class_dataset)[index_to_rename+1] <- 'SNAME'
+}
+return(class_dataset)
+}
+
+```
+
 
 ```{r getting school-class wise perfromance}
 library(dplyr)
@@ -24,14 +46,8 @@ static_cols <- c("DIST", "BLK", "CLUST", "GPCODE", "GPNAME", "SCODE", "SNAME", "
 get_school_class_per <- function(class_data_to_read){
 # class_data_to_read <- datasets_to_read[[4]]
 
-class_dataset <- read.csv(class_data_to_read, stringsAsFactors = FALSE, check.names = FALSE)
-
-if(grepl(class_data_to_read,pattern = "gp_contest_class_4_2017")){
- index_to_rename <- which(names(class_dataset) == 'SNAME')
- names(class_dataset)[index_to_rename] <- 'SCODE'
- names(class_dataset)[index_to_rename+1] <- 'SNAME'
-}
-
+class_dataset <- read_dataset(class_data_to_read)  
+  
 subject_cols <- dplyr::setdiff(names(class_dataset), static_cols)  
 
 # Trimming all subject cols & Encoding all subject cols from Yes/No to 1/0
@@ -75,12 +91,27 @@ return(gp_rank)
 }
 
 
-datasets_to_read <- Sys.glob("../data/*/*.csv")
-datasets_to_read <- datasets_to_read[!datasets_to_read %in% "../data/gp_contest_csv_files_2017-18/gp_contest_class_6_2017-18.csv"]
 all_results <- lapply(datasets_to_read, get_school_class_per)
 
 all_rank_df <- dplyr::bind_rows(all_results)
+data.table::fwrite(all_rank_df,"../data/school_rank.csv",row.names = FALSE)
 
 ```
 
+```{r Total students (gender wise) for a selected school-class}
+get_total_students <- function(class_data_to_read){
+  class_dataset <- read_dataset(class_data_to_read)  
+  class_dataset$year <- paste0(unique(sort(lubridate::year(as.Date(class_dataset$DATE_OF_VISIT)))),collapse = "-")
+  class_dataset <- class_dataset[,c("DIST", "BLK", "CLUST", "GPCODE", "GPNAME", "SCODE", "SNAME","Class visited","year","Gender")]
+  class_gender_profile <- class_dataset %>% group_by(DIST, BLK, CLUST, GPCODE, GPNAME, SCODE, SNAME,`Class visited`,year,Gender) %>% summarise(total_students = length(DIST))
+  print(glue::glue("{class_data_to_read} finished processing .. "))
+  return(class_gender_profile)
+}
+
+class_profile <- lapply(datasets_to_read, get_total_students)
+
+class_profile_df <- dplyr::bind_rows(class_profile)
+data.table::fwrite(class_profile_df,"../data/class_gender_profile.csv",row.names = FALSE)
+
+```
 
