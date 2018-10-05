@@ -19,6 +19,7 @@ Method:
 ```{r Datasets to read}
 datasets_to_read <- Sys.glob("../data/*/*.csv")
 datasets_to_read <- datasets_to_read[!datasets_to_read %in% "../data/gp_contest_csv_files_2017-18/gp_contest_class_6_2017-18.csv"]
+static_cols <- c("DIST", "BLK", "CLUST", "GPCODE", "GPNAME", "SCODE", "SNAME", "STORY_ID", "ENTERED_AT", "DATE_OF_VISIT", "RESPONDENT_TYPE", "Gender", "Class visited")
 
 ```
 
@@ -38,10 +39,8 @@ return(class_dataset)
 
 ```
 
-
 ```{r getting school-class wise perfromance}
 library(dplyr)
-static_cols <- c("DIST", "BLK", "CLUST", "GPCODE", "GPNAME", "SCODE", "SNAME", "STORY_ID", "ENTERED_AT", "DATE_OF_VISIT", "RESPONDENT_TYPE", "Gender", "Class visited")
 
 get_school_class_per <- function(class_data_to_read){
 # class_data_to_read <- datasets_to_read[[4]]
@@ -150,6 +149,38 @@ data.table::fwrite(subject_analysis_4,"../data/subject_analysis_4.csv",row.names
 
 ```
 
+```{r District performance}
+run_district_analysis <- function(class_data_to_read){
+  class_dataset <- read_dataset(class_data_to_read)  
+  
+subject_cols <- dplyr::setdiff(names(class_dataset), static_cols)  
+for(sub in 1:length(subject_cols)){
+  class_dataset[,subject_cols[[sub]]] <- stringr::str_trim(class_dataset[,subject_cols[[sub]]])
+  class_dataset[,subject_cols[[sub]]] <- ifelse(class_dataset[, subject_cols[[sub]]] == "Yes",1,0)
+}
+
+  # browser()
+class_dataset$DATE_OF_VISIT <- as.Date(class_dataset$DATE_OF_VISIT)
+class_dataset$year <- paste0(unique(sort(lubridate::year(as.Date(class_dataset$DATE_OF_VISIT)))),collapse = "-")
+class_dataset <- class_dataset[,c("DIST","Class visited","year","Gender", subject_cols)]
+# browser()
+school_subject_gender_sum <- class_dataset %>% group_by(DIST,`Class visited`,Gender,year) %>% summarise_all(c('sum'))
+school_subject_gender_students <- class_dataset %>% group_by(DIST,`Class visited`,Gender,year) %>% summarise(total_students = length(DIST))
+school_subject_gender_sum <- left_join(school_subject_gender_sum, school_subject_gender_students, by=NULL)
+
+to_long_cols <- c(subject_cols,"total_students")
+school_subject_gender_sum_long <- gather(school_subject_gender_sum, key = subject, value = marks,to_long_cols)
+
+print(glue::glue("{class_data_to_read} finished processing .. "))
+return(school_subject_gender_sum_long)
+}
+
+district_profile <- lapply(datasets_to_read, run_district_analysis)
+
+district_profile_df <- dplyr::bind_rows(district_profile)
+data.table::fwrite(district_profile_df,"../data/district_profile.csv",row.names = FALSE)
+
+```
 
 
 
