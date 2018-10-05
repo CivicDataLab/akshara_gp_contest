@@ -115,3 +115,50 @@ data.table::fwrite(class_profile_df,"../data/class_gender_profile.csv",row.names
 
 ```
 
+
+```{r Subject Analysis - Class wise}
+library(tidyverse)
+run_subject_analysis <- function(class_data_to_read){
+  class_dataset <- read_dataset(class_data_to_read)  
+  
+  subject_cols <- dplyr::setdiff(names(class_dataset), static_cols)  
+
+# Trimming all subject cols & Encoding all subject cols from Yes/No to 1/0
+for(sub in 1:length(subject_cols)){
+  class_dataset[,subject_cols[[sub]]] <- stringr::str_trim(class_dataset[,subject_cols[[sub]]])
+  class_dataset[,subject_cols[[sub]]] <- ifelse(class_dataset[, subject_cols[[sub]]] == "Yes",1,0)
+}
+
+  # browser()
+class_dataset$DATE_OF_VISIT <- as.Date(class_dataset$DATE_OF_VISIT)
+class_dataset$year <- paste0(unique(sort(lubridate::year(as.Date(class_dataset$DATE_OF_VISIT)))),collapse = "-")
+class_dataset <- class_dataset[,c("DIST", "BLK", "CLUST", "GPCODE", "GPNAME", "SCODE", "SNAME","Class visited","year","DATE_OF_VISIT", subject_cols)]
+# browser()
+school_subject_sum <- class_dataset %>% group_by(DIST, BLK, CLUST, GPCODE, GPNAME, SCODE, SNAME,`Class visited`,DATE_OF_VISIT,year) %>% summarise_all(c('sum'))
+  
+school_subject_sum_long <- gather(school_subject_sum, key = subject, value = marks,subject_cols)
+
+print(glue::glue("{class_data_to_read} finished processing .. "))
+return(school_subject_sum_long)
+}
+
+subject_analysis <- lapply(datasets_to_read, run_subject_analysis)
+subject_analysis <- dplyr::bind_rows(subject_analysis)
+subject_analysis_4 <- subject_analysis[subject_analysis$`Class visited` == 4,]
+data.table::fwrite(subject_analysis_4,"../data/subject_analysis_4.csv",row.names = FALSE)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
